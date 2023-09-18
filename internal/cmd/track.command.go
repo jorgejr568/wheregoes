@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/jorgejr568/wheregoes/internal/clients"
+	"github.com/jorgejr568/wheregoes/internal/services"
 	"github.com/labstack/gommon/color"
 	"github.com/spf13/cobra"
 	"log"
 	"regexp"
-	"wheregoes/internal/clients"
-	"wheregoes/internal/services"
 )
 
 func track() *cobra.Command {

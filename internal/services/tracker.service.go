@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/jorgejr568/wheregoes/internal/clients"
+	"github.com/jorgejr568/wheregoes/internal/utils"
 	urlPkg "net/url"
-	"wheregoes/internal/clients"
-	"wheregoes/internal/utils"
 )
 
 type TrackCheckpoint struct {

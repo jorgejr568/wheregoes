@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"context"
+	"github.com/jorgejr568/wheregoes/internal/server"
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
-	"wheregoes/internal/server"
 )
 
 func serve() *cobra.Command {

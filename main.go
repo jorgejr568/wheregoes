@@ -1,6 +1,6 @@
 package main
 
-import "wheregoes/internal/cmd"
+import "github.com/jorgejr568/wheregoes/internal/cmd"
 
 func main() {
 	err := cmd.RootCmd.Execute()

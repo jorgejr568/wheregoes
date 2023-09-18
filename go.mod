@@ -1,4 +1,4 @@
-module wheregoes
+module github.com/jorgejr568/wheregoes
 
 go 1.20
 

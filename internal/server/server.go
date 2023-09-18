@@ -2,11 +2,11 @@ package server
 
 import (
 	"context"
+	"github.com/jorgejr568/wheregoes/internal/clients"
+	"github.com/jorgejr568/wheregoes/internal/services"
 	"github.com/labstack/echo/v4"
 	"log"
 	"net/http"
-	"wheregoes/internal/clients"
-	"wheregoes/internal/services"
 )
 
 type trackRequest struct {
