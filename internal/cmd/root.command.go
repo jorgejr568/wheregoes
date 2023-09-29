@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"github.com/labstack/gommon/color"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
+
+var TrackCmd = track()
+var ServeCmd = serve()
+
+var DefaultCommand = TrackCmd
 
 var RootCmd = &cobra.Command{
 	Short: "Wheregoes is a CLI tool to track a URL",
 	Long:  "Wheregoes is a CLI tool to track a URL",
-}
-
-func init() {
-	RootCmd.AddCommand(track())
-	RootCmd.AddCommand(serve())
-
-	RootCmd.Flags().BoolP("version", "v", false, "Print version number")
-	RootCmd.Run = func(cmd *cobra.Command, args []string) {
-		print("args", args)
+	Run: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("version").Value.String() == "true" {
 			fmt.Printf(
 				color.Green(
@@ -27,15 +25,20 @@ func init() {
 			return
 		}
 
-		hasArgs := len(args) > 0
-		if hasArgs {
-			print(color.Red(fmt.Sprintf("Unknown command: %s\n\n", args[0])))
-			RootCmd.Commands()[0].Run(cmd, args)
-		}
+		DefaultCommand.Run(cmd, args)
+		return
+	},
+	PreRun: func(cmd *cobra.Command, args []string) {
+	},
+	Args: DefaultCommand.Args,
+}
 
-		err := cmd.Help()
-		if err != nil {
-			return
-		}
-	}
+func init() {
+	RootCmd.AddCommand(TrackCmd)
+	RootCmd.AddCommand(ServeCmd)
+
+	RootCmd.Flags().BoolP("version", "v", false, "Print version number")
+	DefaultCommand.Flags().VisitAll(func(flag *pflag.Flag) {
+		RootCmd.Flags().AddFlag(flag)
+	})
 }
