@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/jorgejr568/wheregoes/internal/clients"
 	"github.com/jorgejr568/wheregoes/internal/services"
@@ -35,7 +36,17 @@ func track() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			print(color.Yellow(fmt.Sprintf("URL: %s\n", response.Url)))
+			if cmd.Flag("json").Value.String() == "true" {
+				jsonResponse, err := json.Marshal(response.Checkpoints)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				fmt.Println(string(jsonResponse))
+				return
+			}
+
+			print(color.Yellow(fmt.Sprintf("Initial URL: %s\n", args[0])))
 			print(
 				color.Green(
 					fmt.Sprintf("Final URL: %s\n\n\n\n", response.Checkpoints[len(response.Checkpoints)-1].Url),
@@ -51,6 +62,8 @@ func track() *cobra.Command {
 
 		},
 	}
+
+	cmd.Flags().Bool("json", false, "Print response in JSON format")
 
 	return cmd
 }
