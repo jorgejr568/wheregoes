@@ -11,10 +11,10 @@ go install github.com/jorgejr568/wheregoes
 ### Usage
 
 ```shell
-wheregoes track https://maps.google.com
+wheregoes https://maps.google.com
 
 # Output:
-# ❯ wheregoes track https://maps.google.com
+# ❯ wheregoes https://maps.google.com
 # URL: https://www.google.com/maps
 # Final URL: https://www.google.com/maps
 #
@@ -26,10 +26,10 @@ wheregoes track https://maps.google.com
 #### Works with local URLs too:
 
 ```shell
-wheregoes track http://localhost:8080
+wheregoes http://localhost:8080
 
 # Output:
-# ❯ wheregoes track http://localhost:8080
+# ❯ wheregoes http://localhost:8080
 # URL: http://localhost:8080
 # Final URL: http://localhost:8080
 #
