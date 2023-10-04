@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/jorgejr568/wheregoes/internal/clients"
 	"github.com/jorgejr568/wheregoes/internal/services"
@@ -31,35 +30,29 @@ func track() *cobra.Command {
 				clients.NewHttpFetcherClient(),
 			)
 
-			response, err := service.Track(cmd.Context(), args[0])
-			if err != nil {
-				log.Fatal(err)
-			}
+			trackerCh := service.TrackChannel(cmd.Context(), args[0])
+			i := 0
+			for {
+				select {
+				case response := <-trackerCh:
+					if response.Err != nil {
+						log.Fatal(response.Err)
+					}
 
-			if cmd.Flag("json").Value.String() == "true" {
-				jsonResponse, err := json.Marshal(response.Checkpoints)
-				if err != nil {
-					log.Fatal(err)
+					if response.Finished {
+						return
+					}
+
+					checkpoint := response.Checkpoint
+
+					fmt.Print(
+						color.Yellow(
+							fmt.Sprintf("%d ....... %s (%d, %s)\n", i+1, checkpoint.Url, checkpoint.Status, checkpoint.Latency),
+						),
+					)
+					i++
 				}
-
-				fmt.Println(string(jsonResponse))
-				return
 			}
-
-			print(color.Yellow(fmt.Sprintf("Initial URL: %s\n", args[0])))
-			print(
-				color.Green(
-					fmt.Sprintf("Final URL: %s\n\n\n\n", response.Checkpoints[len(response.Checkpoints)-1].Url),
-				),
-			)
-			for i, checkpoint := range response.Checkpoints {
-				print(
-					color.Yellow(
-						fmt.Sprintf("%d ....... %s (%d)\n", i+1, checkpoint.Url, checkpoint.Status),
-					),
-				)
-			}
-
 		},
 	}
 
