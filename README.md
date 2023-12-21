@@ -5,7 +5,7 @@ A simple tool to find out where a URL redirects
 ### Installation
 
 ```shell
-go install github.com/jorgejr568/wheregoes  
+go install github.com/jorgejr568/wheregoes@latest
 ```
 
 ### Usage
