@@ -25,8 +25,16 @@ type trackErrorResponse struct {
 	Error string `json:"error"`
 }
 
+type trackFinishResponse struct {
+	Finished bool `json:"finished"`
+}
+
 func newTrackErrorResponse(err error) trackErrorResponse {
 	return trackErrorResponse{Error: err.Error()}
+}
+
+func newTrackFinishResponse() trackFinishResponse {
+	return trackFinishResponse{Finished: true}
 }
 
 func Serve(ctx context.Context) error {
@@ -103,6 +111,12 @@ func Serve(ctx context.Context) error {
 					}
 
 					if response.Finished {
+						err = ws.WriteJSON(newTrackFinishResponse())
+						if err != nil {
+							c.Logger().Error("Error writing to websocket: ", err)
+
+						}
+
 						c.Logger().Info("Finished tracking of", request.Url)
 						continue wsLoop
 					}
