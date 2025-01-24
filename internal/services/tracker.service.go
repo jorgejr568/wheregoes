@@ -4,9 +4,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/jorgejr568/wheregoes/internal/clients"
+	"github.com/jorgejr568/wheregoes/internal/pkg/set"
 	"github.com/jorgejr568/wheregoes/internal/utils"
 	urlPkg "net/url"
 	"time"
+)
+
+var (
+	ErrCircularRedirection = fmt.Errorf("circular redirection detected")
 )
 
 type TrackCheckpoint struct {
@@ -37,6 +42,7 @@ type defaultTrackerService struct {
 
 func (t *defaultTrackerService) Track(ctx context.Context, url string) (TrackResponse, error) {
 	var checkpoints []TrackCheckpoint
+	visitedNodes := set.New[string]()
 	for {
 		now := time.Now()
 		res, err := t.fetcher.Fetch(ctx, url)
@@ -61,6 +67,11 @@ func (t *defaultTrackerService) Track(ctx context.Context, url string) (TrackRes
 			break
 		}
 
+		if visitedNodes.Contains(url) {
+			return TrackResponse{}, ErrCircularRedirection
+		}
+
+		visitedNodes.Add(url)
 	}
 
 	return TrackResponse{
@@ -87,7 +98,7 @@ func (t *defaultTrackerService) TrackChannel(ctx context.Context, url string) <-
 
 	go func() {
 		defer close(ch)
-
+		visitedNodes := set.New[string]()
 		for {
 			now := time.Now()
 			res, err := t.fetcher.Fetch(ctx, url)
@@ -107,6 +118,14 @@ func (t *defaultTrackerService) TrackChannel(ctx context.Context, url string) <-
 				},
 			}
 
+			if visitedNodes.Contains(url) {
+				ch <- TrackChannelResponse{
+					Err: ErrCircularRedirection,
+				}
+				return
+			}
+
+			visitedNodes.Add(url)
 			isRedirect := res.StatusCode >= 300 && res.StatusCode < 400
 			if !isRedirect {
 				ch <- TrackChannelResponse{

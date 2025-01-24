@@ -1,3 +1,6 @@
 tmp/
 .vscode/
 .idea/
+
+# binary output
+wheregoes

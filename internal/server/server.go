@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"github.com/jorgejr568/wheregoes/internal/clients"
 	"github.com/jorgejr568/wheregoes/internal/services"
 	"github.com/labstack/echo/v4"
@@ -35,6 +36,10 @@ func Serve(ctx context.Context) error {
 
 		response, err := service.Track(ctx, request.Url)
 		if err != nil {
+			if errors.Is(err, services.ErrCircularRedirection) {
+				return c.JSON(http.StatusConflict, map[string]string{"error": err.Error()})
+			}
+
 			return err
 		}
 
@@ -42,7 +47,7 @@ func Serve(ctx context.Context) error {
 	})
 
 	err := echoServer.Start(":8080")
-	if err != nil && err != http.ErrServerClosed {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 
