@@ -95,6 +95,10 @@ func Serve(ctx context.Context) error {
 			request := new(trackRequest)
 			if err = json.Unmarshal(msg, request); err != nil {
 				c.Logger().Error(err)
+				err = ws.WriteJSON(newTrackErrorResponse(err))
+				if err != nil {
+					c.Logger().Error("Error writing to websocket: ", err)
+				}
 				continue wsLoop
 			}
 
