@@ -45,6 +45,8 @@ func Serve(ctx context.Context) error {
 
 	service := services.NewTrackerService(clients.NewHttpFetcherClient())
 
+	echoServer.Use(middleware.Logger())
+	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: allowedOrigins,
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
