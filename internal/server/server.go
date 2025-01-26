@@ -7,35 +7,29 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/jorgejr568/wheregoes/internal/clients"
+	"github.com/jorgejr568/wheregoes/internal/dto"
 	"github.com/jorgejr568/wheregoes/internal/services"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 )
 
 var (
-	upgrader = websocket.Upgrader{}
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			for _, origin := range allowedOrigins {
+				if origin == "*" || origin == r.Header.Get("Origin") {
+					return true
+				}
+			}
+
+			return false
+		},
+	}
 )
-
-type trackRequest struct {
-	Url string `json:"url"`
-}
-
-type trackErrorResponse struct {
-	Error string `json:"error"`
-}
-
-type trackFinishResponse struct {
-	Finished bool `json:"finished"`
-}
-
-func newTrackErrorResponse(err error) trackErrorResponse {
-	return trackErrorResponse{Error: err.Error()}
-}
-
-func newTrackFinishResponse() trackFinishResponse {
-	return trackFinishResponse{Finished: true}
-}
 
 func Serve(ctx context.Context) error {
 	echoServer := echo.New()
@@ -51,8 +45,17 @@ func Serve(ctx context.Context) error {
 
 	service := services.NewTrackerService(clients.NewHttpFetcherClient())
 
+	echoServer.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: allowedOrigins,
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+	}))
+
+	echoServer.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
+
 	echoServer.POST("/tracks", func(c echo.Context) error {
-		request := new(trackRequest)
+		request := new(dto.TrackRequest)
 		if err := c.Bind(request); err != nil {
 			return err
 		}
@@ -60,7 +63,7 @@ func Serve(ctx context.Context) error {
 		response, err := service.Track(ctx, request.Url)
 		if err != nil {
 			if errors.Is(err, services.ErrCircularRedirection) {
-				return c.JSON(http.StatusConflict, newTrackErrorResponse(err))
+				return c.JSON(http.StatusConflict, dto.NewTrackErrorResponse(err))
 			}
 
 			return err
@@ -69,7 +72,7 @@ func Serve(ctx context.Context) error {
 		return c.JSON(http.StatusOK, response)
 	})
 
-	echoServer.GET("/tracksWs", func(c echo.Context) error {
+	echoServer.GET("/ws", func(c echo.Context) error {
 		ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 		if err != nil {
 			return err
@@ -92,10 +95,10 @@ func Serve(ctx context.Context) error {
 
 			c.Logger().Info(fmt.Sprintf("Received message: %s", msg))
 
-			request := new(trackRequest)
+			request := new(dto.TrackRequest)
 			if err = json.Unmarshal(msg, request); err != nil {
 				c.Logger().Error(err)
-				err = ws.WriteJSON(newTrackErrorResponse(err))
+				err = ws.WriteJSON(dto.NewTrackErrorResponse(err))
 				if err != nil {
 					c.Logger().Error("Error writing to websocket: ", err)
 				}
@@ -107,7 +110,7 @@ func Serve(ctx context.Context) error {
 				select {
 				case response := <-trackChannel:
 					if response.Err != nil {
-						err = ws.WriteJSON(newTrackErrorResponse(response.Err))
+						err = ws.WriteJSON(dto.NewTrackErrorResponse(response.Err))
 						if err != nil {
 							c.Logger().Error("Error writing to websocket: ", err)
 						}
@@ -115,7 +118,7 @@ func Serve(ctx context.Context) error {
 					}
 
 					if response.Finished {
-						err = ws.WriteJSON(newTrackFinishResponse())
+						err = ws.WriteJSON(dto.NewTrackFinishResponse())
 						if err != nil {
 							c.Logger().Error("Error writing to websocket: ", err)
 
@@ -126,7 +129,7 @@ func Serve(ctx context.Context) error {
 					}
 
 					checkpoint := response.Checkpoint
-					err := ws.WriteJSON(checkpoint)
+					err := ws.WriteJSON(dto.NewTrackCheckpointResponse(checkpoint))
 					if err != nil {
 						c.Logger().Error("Error writing to websocket: ", err)
 					}
@@ -143,4 +146,17 @@ func Serve(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+var (
+	allowedOrigins []string
+)
+
+func init() {
+	if envAllowedOrigins := os.Getenv("ALLOWED_ORIGINS"); envAllowedOrigins != "" {
+		allowedOrigins = strings.Split(envAllowedOrigins, ",")
+		return
+	}
+
+	allowedOrigins = []string{"*"}
 }
