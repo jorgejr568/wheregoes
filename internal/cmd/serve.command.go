@@ -22,7 +22,8 @@ func serve() *cobra.Command {
 
 			signal.Notify(signalCh, os.Interrupt)
 
-			err := server.Serve(ctx)
+			port, _ := cmd.Flags().GetString("port")
+			err := server.Serve(ctx, port)
 			if err != nil {
 				panic(err)
 			}

@@ -17,21 +17,26 @@ import (
 	"strings"
 )
 
-var (
-	upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			for _, origin := range allowedOrigins {
-				if origin == "*" || origin == r.Header.Get("Origin") {
-					return true
-				}
+func checkOrigin(origins []string) func(*http.Request) bool {
+	return func(r *http.Request) bool {
+		for _, origin := range origins {
+			if origin == "*" || origin == r.Header.Get("Origin") {
+				return true
 			}
-
-			return false
-		},
+		}
+		return false
 	}
-)
+}
 
-func Serve(ctx context.Context) error {
+func Serve(ctx context.Context, port string) error {
+	return ServeWithConfig(ctx, port, allowedOrigins)
+}
+
+func ServeWithConfig(ctx context.Context, port string, origins []string) error {
+	upgrader := websocket.Upgrader{
+		CheckOrigin: checkOrigin(origins),
+	}
+
 	echoServer := echo.New()
 	echoServer.HideBanner = true
 	go func() {
@@ -48,7 +53,7 @@ func Serve(ctx context.Context) error {
 	echoServer.Use(middleware.Logger())
 	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: allowedOrigins,
+		AllowOrigins: origins,
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
 	}))
 
@@ -137,7 +142,7 @@ func Serve(ctx context.Context) error {
 		}
 	})
 
-	err := echoServer.Start(":8080")
+	err := echoServer.Start(":" + port)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

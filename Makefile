@@ -12,7 +12,7 @@ BINARY_UNIX=$(BINARY_NAME)_unix
 COVERAGE_FILE=coverage.out
 COVERAGE_HTML=coverage.html
 
-.PHONY: all build clean test coverage coverage-html test-verbose help deps
+.PHONY: all build clean test coverage coverage-html test-verbose help deps clean-cache
 
 all: test build
 
@@ -41,6 +41,7 @@ test-race:
 
 clean:
 	$(GOCLEAN)
+	$(GOCLEAN) -testcache
 	rm -f $(BINARY_NAME)
 	rm -f $(BINARY_UNIX)
 	rm -f $(COVERAGE_FILE)
@@ -82,4 +83,5 @@ help:
 	@echo "  docker-build - Build Docker image"
 	@echo "  docker-run   - Run Docker container"
 	@echo "  lint         - Run linter (requires golangci-lint)"
+	@echo "  clean-cache  - Clear Go test cache"
 	@echo "  help         - Show this help message"

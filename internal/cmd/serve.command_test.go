@@ -28,7 +28,7 @@ func TestServeCommand_Help(t *testing.T) {
 
 func TestServeCommand_ContextCancellation(t *testing.T) {
 	cmd := serve()
-	cmd.SetArgs([]string{})
+	cmd.SetArgs([]string{"--port", "0"})
 	
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
