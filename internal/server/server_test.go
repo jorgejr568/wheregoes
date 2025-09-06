@@ -527,7 +527,11 @@ func TestHealthEndpoint_Integration(t *testing.T) {
 		t.Fatalf("Failed to start server: %v", err)
 	}
 	defer listener.Close()
-	defer server.Shutdown(ctx)
+	defer func() {
+		if err := server.Shutdown(ctx); err != nil {
+			t.Logf("Error shutting down server: %v", err)
+		}
+	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	url := fmt.Sprintf("http://localhost:%d/health", port)
@@ -569,7 +573,11 @@ func TestTracksEndpoint_Integration_Success(t *testing.T) {
 		t.Fatalf("Failed to start server: %v", err)
 	}
 	defer listener.Close()
-	defer server.Shutdown(ctx)
+	defer func() {
+		if err := server.Shutdown(ctx); err != nil {
+			t.Logf("Error shutting down server: %v", err)
+		}
+	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	url := fmt.Sprintf("http://localhost:%d/tracks", port)
@@ -602,7 +610,11 @@ func TestTracksEndpoint_Integration_InvalidJSON(t *testing.T) {
 		t.Fatalf("Failed to start server: %v", err)
 	}
 	defer listener.Close()
-	defer server.Shutdown(ctx)
+	defer func() {
+		if err := server.Shutdown(ctx); err != nil {
+			t.Logf("Error shutting down server: %v", err)
+		}
+	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	url := fmt.Sprintf("http://localhost:%d/tracks", port)
@@ -634,7 +646,11 @@ func TestWebSocketEndpoint_Integration(t *testing.T) {
 		t.Fatalf("Failed to start server: %v", err)
 	}
 	defer listener.Close()
-	defer server.Shutdown(ctx)
+	defer func() {
+		if err := server.Shutdown(ctx); err != nil {
+			t.Logf("Error shutting down server: %v", err)
+		}
+	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	wsURL := fmt.Sprintf("ws://localhost:%d/ws", port)
@@ -655,7 +671,9 @@ func TestWebSocketEndpoint_Integration(t *testing.T) {
 	}
 
 	// Read response
-	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if err := conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("Failed to set read deadline: %v", err)
+	}
 	_, message, err := conn.ReadMessage()
 	if err != nil {
 		t.Fatalf("Failed to read WebSocket response: %v", err)
@@ -669,7 +687,9 @@ func TestWebSocketEndpoint_Integration(t *testing.T) {
 	}
 
 	// Read response after invalid JSON (might be error or finish)
-	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if err := conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("Failed to set read deadline: %v", err)
+	}
 	_, errMessage, err := conn.ReadMessage()
 	if err == nil {
 		t.Logf("Received response after invalid JSON: %s", string(errMessage))
@@ -687,7 +707,11 @@ func TestWebSocketEndpoint_Integration_CloseHandling(t *testing.T) {
 		t.Fatalf("Failed to start server: %v", err)
 	}
 	defer listener.Close()
-	defer server.Shutdown(ctx)
+	defer func() {
+		if err := server.Shutdown(ctx); err != nil {
+			t.Logf("Error shutting down server: %v", err)
+		}
+	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	wsURL := fmt.Sprintf("ws://localhost:%d/ws", port)
@@ -701,7 +725,9 @@ func TestWebSocketEndpoint_Integration_CloseHandling(t *testing.T) {
 	}
 
 	// Send close message to test close handling
-	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")); err != nil {
+		t.Logf("Failed to send close message: %v", err)
+	}
 	conn.Close()
 
 	// Test another connection to ensure server is still running
@@ -730,7 +756,11 @@ func TestTracksEndpoint_CircularRedirection(t *testing.T) {
 		t.Fatalf("Failed to start server: %v", err)
 	}
 	defer listener.Close()
-	defer apiServer.Shutdown(ctx)
+	defer func() {
+		if err := apiServer.Shutdown(ctx); err != nil {
+			t.Logf("Error shutting down server: %v", err)
+		}
+	}()
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	url := fmt.Sprintf("http://localhost:%d/tracks", port)
@@ -762,7 +792,9 @@ func TestStartServerWithConfig_PortError(t *testing.T) {
 	listener, server, err := StartServerWithConfig(ctx, "99999999", []string{"*"})
 	if err == nil {
 		listener.Close()
-		server.Shutdown(ctx)
+		if shutdownErr := server.Shutdown(ctx); shutdownErr != nil {
+			t.Logf("Error shutting down server: %v", shutdownErr)
+		}
 		t.Error("Expected error when starting server on invalid port")
 	}
 }
