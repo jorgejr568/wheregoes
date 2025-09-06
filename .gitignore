@@ -5,3 +5,6 @@ tmp/
 
 # binary output
 wheregoes
+coverage.out
+coverage.html
+build-errors.log

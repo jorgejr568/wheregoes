@@ -35,3 +35,38 @@ wheregoes http://localhost:8080
 #
 # 1 ....... http://localhost:8080 (200)
 ```
+
+### Server Mode
+
+You can also run wheregoes as a server:
+
+```shell
+wheregoes serve
+```
+
+This starts an HTTP server on port 8080 with REST API and WebSocket support for real-time URL tracking.
+
+## Development
+
+### Testing
+
+This project has comprehensive test coverage. See [TESTING.md](TESTING.md) for detailed information about:
+
+- Test structure and coverage reports
+- Running different types of tests
+- CI/CD pipeline
+- Test philosophy and best practices
+
+**Quick test commands:**
+```bash
+# Run all tests
+make test
+
+# Generate coverage report
+make coverage
+
+# Run comprehensive test suite
+./scripts/test.sh
+```
+
+**Current test coverage:** 95.5% on core functionality

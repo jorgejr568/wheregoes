@@ -81,6 +81,10 @@ func (t *defaultTrackerService) Track(ctx context.Context, url string) (TrackRes
 }
 
 func (t *defaultTrackerService) transformLocationUrl(locationUrl string, previousUrl string) string {
+	if locationUrl == "" {
+		return ""
+	}
+	
 	if utils.IsUrl(locationUrl) {
 		return locationUrl
 	}

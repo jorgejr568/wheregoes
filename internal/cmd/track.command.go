@@ -15,15 +15,16 @@ func track() *cobra.Command {
 		Use:   "track [url]",
 		Short: "Track a URL",
 		Args:  cobra.ExactArgs(1),
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			urlRegex, err := regexp.Compile(`^https?://`)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			if !urlRegex.MatchString(args[0]) {
-				log.Fatal("Invalid URL")
+				return fmt.Errorf("Invalid URL")
 			}
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			service := services.NewTrackerService(
