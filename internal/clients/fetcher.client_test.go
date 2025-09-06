@@ -55,17 +55,31 @@ func TestHttpFetcherClient_Fetch(t *testing.T) {
 			expectedStatus: http.StatusInternalServerError,
 			expectError:    false,
 		},
+		{
+			name: "request error - invalid URL",
+			serverResponse: func(w http.ResponseWriter, r *http.Request) {
+				// This won't be called since we'll use an invalid URL
+			},
+			expectedStatus: 0,
+			expectError:    true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(tt.serverResponse))
-			defer server.Close()
+			var url string
+			if tt.name == "request error - invalid URL" {
+				url = "invalid://url"
+			} else {
+				server := httptest.NewServer(http.HandlerFunc(tt.serverResponse))
+				defer server.Close()
+				url = server.URL
+			}
 
 			client := NewHttpFetcherClient()
 			ctx := context.Background()
 
-			response, err := client.Fetch(ctx, server.URL)
+			response, err := client.Fetch(ctx, url)
 
 			if tt.expectError && err == nil {
 				t.Errorf("expected error but got none")

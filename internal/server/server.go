@@ -5,16 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/gorilla/websocket"
 	"github.com/jorgejr568/wheregoes/internal/clients"
 	"github.com/jorgejr568/wheregoes/internal/dto"
 	"github.com/jorgejr568/wheregoes/internal/services"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"log"
-	"net/http"
-	"os"
-	"strings"
 )
 
 func checkOrigin(origins []string) func(*http.Request) bool {
@@ -29,22 +31,31 @@ func checkOrigin(origins []string) func(*http.Request) bool {
 }
 
 func Serve(ctx context.Context, port string) error {
-	return ServeWithConfig(ctx, port, allowedOrigins)
+	_, _, err := StartServerWithConfig(ctx, port, allowedOrigins)
+	if err != nil {
+		return err
+	}
+
+	// Wait for context to be cancelled (e.g., by signal)
+	<-ctx.Done()
+	return nil
 }
 
-func ServeWithConfig(ctx context.Context, port string, origins []string) error {
+// StartServerWithConfig starts a server and returns the listener so tests can get the actual port
+func StartServerWithConfig(ctx context.Context, port string, origins []string) (net.Listener, *echo.Echo, error) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin: checkOrigin(origins),
 	}
 
 	echoServer := echo.New()
 	echoServer.HideBanner = true
+
+	// Setup shutdown handler
 	go func() {
 		<-ctx.Done()
-
 		log.Println("Shutting down server...")
-		if err := echoServer.Shutdown(ctx); err != nil {
-			log.Fatal(err)
+		if err := echoServer.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down server: %v", err)
 		}
 	}()
 
@@ -72,7 +83,6 @@ func ServeWithConfig(ctx context.Context, port string, origins []string) error {
 			if errors.Is(err, services.ErrCircularRedirection) {
 				return c.JSON(http.StatusConflict, dto.NewTrackErrorResponse(err))
 			}
-
 			return err
 		}
 
@@ -126,7 +136,6 @@ func ServeWithConfig(ctx context.Context, port string, origins []string) error {
 					err = ws.WriteJSON(dto.NewTrackFinishResponse())
 					if err != nil {
 						c.Logger().Error("Error writing to websocket: ", err)
-
 					}
 
 					c.Logger().Info("Finished tracking of", request.Url)
@@ -142,12 +151,21 @@ func ServeWithConfig(ctx context.Context, port string, origins []string) error {
 		}
 	})
 
-	err := echoServer.Start(":" + port)
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
+	// Create listener to get actual port
+	listener, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return nil
+	// Start server in background
+	go func() {
+		log.Println("Starting server on port", port)
+		if err := echoServer.Server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("Server error: %v", err)
+		}
+	}()
+
+	return listener, echoServer, nil
 }
 
 var (
