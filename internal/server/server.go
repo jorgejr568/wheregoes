@@ -108,38 +108,33 @@ func Serve(ctx context.Context) error {
 			}
 
 			trackChannel := service.TrackChannel(ctx, request.Url)
-			for {
-				select {
-				case response := <-trackChannel:
-					if response.Err != nil {
-						err = ws.WriteJSON(dto.NewTrackErrorResponse(response.Err))
-						if err != nil {
-							c.Logger().Error("Error writing to websocket: ", err)
-						}
-						continue wsLoop
-					}
-
-					if response.Finished {
-						err = ws.WriteJSON(dto.NewTrackFinishResponse())
-						if err != nil {
-							c.Logger().Error("Error writing to websocket: ", err)
-
-						}
-
-						c.Logger().Info("Finished tracking of", request.Url)
-						continue wsLoop
-					}
-
-					checkpoint := response.Checkpoint
-					err := ws.WriteJSON(dto.NewTrackCheckpointResponse(checkpoint))
+			for response := range trackChannel {
+				if response.Err != nil {
+					err = ws.WriteJSON(dto.NewTrackErrorResponse(response.Err))
 					if err != nil {
 						c.Logger().Error("Error writing to websocket: ", err)
 					}
+					continue wsLoop
+				}
+
+				if response.Finished {
+					err = ws.WriteJSON(dto.NewTrackFinishResponse())
+					if err != nil {
+						c.Logger().Error("Error writing to websocket: ", err)
+
+					}
+
+					c.Logger().Info("Finished tracking of", request.Url)
+					continue wsLoop
+				}
+
+				checkpoint := response.Checkpoint
+				err := ws.WriteJSON(dto.NewTrackCheckpointResponse(checkpoint))
+				if err != nil {
+					c.Logger().Error("Error writing to websocket: ", err)
 				}
 			}
 		}
-
-		return nil
 	})
 
 	err := echoServer.Start(":8080")

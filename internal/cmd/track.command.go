@@ -33,26 +33,23 @@ func track() *cobra.Command {
 
 			trackerCh := service.TrackChannel(cmd.Context(), args[0])
 			i := 0
-			for {
-				select {
-				case response := <-trackerCh:
-					if response.Err != nil {
-						log.Fatal(response.Err)
-					}
-
-					if response.Finished {
-						return
-					}
-
-					checkpoint := response.Checkpoint
-
-					fmt.Print(
-						color.Yellow(
-							fmt.Sprintf("%d ....... %s (%d, %s)\n", i+1, checkpoint.Url, checkpoint.Status, checkpoint.Latency),
-						),
-					)
-					i++
+			for response := range trackerCh {
+				if response.Err != nil {
+					log.Fatal(response.Err)
 				}
+
+				if response.Finished {
+					return
+				}
+
+				checkpoint := response.Checkpoint
+
+				fmt.Print(
+					color.Yellow(
+						fmt.Sprintf("%d ....... %s (%d, %s)\n", i+1, checkpoint.Url, checkpoint.Status, checkpoint.Latency),
+					),
+				)
+				i++
 			}
 		},
 	}

@@ -64,6 +64,7 @@ func TestServeCommand_PortFlag(t *testing.T) {
 	portFlag := cmd.Flags().Lookup("port")
 	if portFlag == nil {
 		t.Errorf("expected 'port' flag to exist")
+		return
 	}
 	
 	if portFlag.DefValue != "8080" {

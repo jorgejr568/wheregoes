@@ -92,6 +92,7 @@ func TestTrackCommand_JSONFlag(t *testing.T) {
 	jsonFlag := cmd.Flags().Lookup("json")
 	if jsonFlag == nil {
 		t.Errorf("expected 'json' flag to exist")
+		return
 	}
 	
 	if jsonFlag.DefValue != "false" {

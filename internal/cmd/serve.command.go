@@ -14,7 +14,7 @@ func serve() *cobra.Command {
 		Short: "Start the server",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, cancel := context.WithCancel(cmd.Context())
-			signalCh := make(chan os.Signal)
+			signalCh := make(chan os.Signal, 1)
 			go func() {
 				<-signalCh
 				cancel()

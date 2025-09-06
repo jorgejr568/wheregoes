@@ -17,7 +17,7 @@ COVERAGE_HTML=coverage.html
 all: test build
 
 build:
-	$(GOBUILD) -o $(BINARY_NAME) -v ./...
+	$(GOBUILD) -o $(BINARY_NAME) -v ./
 
 test:
 	$(GOTEST) -v ./...

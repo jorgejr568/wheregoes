@@ -5,6 +5,7 @@ tmp/
 
 # binary output
 wheregoes
+wheregoes_unix
 coverage.out
 coverage.html
 build-errors.log

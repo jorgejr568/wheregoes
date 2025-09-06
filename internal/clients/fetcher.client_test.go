@@ -22,7 +22,7 @@ func TestHttpFetcherClient_Fetch(t *testing.T) {
 			serverResponse: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/html")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("Hello World"))
+				_, _ = w.Write([]byte("Hello World"))
 			},
 			expectedStatus: http.StatusOK,
 			expectError:    false,

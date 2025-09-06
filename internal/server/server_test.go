@@ -218,7 +218,7 @@ func TestWebSocketConnection(t *testing.T) {
 
 		var request dto.TrackRequest
 		if err := json.Unmarshal(msg, &request); err != nil {
-			conn.WriteJSON(dto.NewTrackErrorResponse(err))
+			_ = conn.WriteJSON(dto.NewTrackErrorResponse(err))
 			return
 		}
 
@@ -228,9 +228,9 @@ func TestWebSocketConnection(t *testing.T) {
 			Latency: 100 * time.Millisecond,
 		}
 		response := dto.NewTrackCheckpointResponse(checkpoint)
-		conn.WriteJSON(response)
+		_ = conn.WriteJSON(response)
 
-		conn.WriteJSON(dto.NewTrackFinishResponse())
+		_ = conn.WriteJSON(dto.NewTrackFinishResponse())
 	}))
 	defer server.Close()
 
@@ -467,30 +467,23 @@ func TestWebSocketEndpoint_DetailedHandling(t *testing.T) {
 
 				request := new(dto.TrackRequest)
 				if err = json.Unmarshal(msg, request); err != nil {
-					ws.WriteJSON(dto.NewTrackErrorResponse(err))
+					_ = ws.WriteJSON(dto.NewTrackErrorResponse(err))
 					return
 				}
 
 				trackChannel := mockService.TrackChannel(context.Background(), request.Url)
-				for {
-					select {
-					case response, ok := <-trackChannel:
-						if !ok {
-							return
-						}
-						
-						if response.Err != nil {
-							ws.WriteJSON(dto.NewTrackErrorResponse(response.Err))
-							return
-						}
-
-						if response.Finished {
-							ws.WriteJSON(dto.NewTrackFinishResponse())
-							return
-						}
-
-						ws.WriteJSON(dto.NewTrackCheckpointResponse(response.Checkpoint))
+				for response := range trackChannel {
+					if response.Err != nil {
+						_ = ws.WriteJSON(dto.NewTrackErrorResponse(response.Err))
+						return
 					}
+
+					if response.Finished {
+						_ = ws.WriteJSON(dto.NewTrackFinishResponse())
+						return
+					}
+
+					_ = ws.WriteJSON(dto.NewTrackCheckpointResponse(response.Checkpoint))
 				}
 			}))
 			defer server.Close()
@@ -552,7 +545,7 @@ func TestServeFunction(t *testing.T) {
 func TestServeFunction_WithRealEndpoints(t *testing.T) {
 	mockExternalServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer mockExternalServer.Close()
 
@@ -640,7 +633,7 @@ func TestServeFunction_WebSocketEndpoint(t *testing.T) {
 
 	// Read responses
 	for i := 0; i < 3; i++ {
-		conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+		_ = conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			break
@@ -653,7 +646,7 @@ func TestServeFunction_WebSocketEndpoint(t *testing.T) {
 		t.Logf("Failed to send invalid JSON: %v", err)
 	} else {
 		// Try to read error response
-		conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
+		_ = conn.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
 		_, message, err := conn.ReadMessage()
 		if err == nil {
 			t.Logf("Received error response: %s", string(message))
@@ -756,7 +749,7 @@ func TestWebSocketConnection_CloseHandling(t *testing.T) {
 	}
 
 	// Send close message to test close handling
-	conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	conn.Close()
 
 	// Test another connection to ensure server is still running
@@ -845,7 +838,7 @@ func TestWebSocket_CompleteMessageLoop(t *testing.T) {
 
 		// Read all responses for this request
 		for j := 0; j < 5; j++ { // Read up to 5 messages
-			conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+			_ = conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 			_, message, err := conn.ReadMessage()
 			if err != nil {
 				break
@@ -865,7 +858,7 @@ func TestWebSocket_CompleteMessageLoop(t *testing.T) {
 	// Send invalid JSON to trigger error path
 	if err := conn.WriteMessage(websocket.TextMessage, []byte("invalid json")); err == nil {
 		// Try to read error response
-		conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+		_ = conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 		_, message, err := conn.ReadMessage()
 		if err == nil {
 			t.Logf("Error response for invalid JSON: %s", string(message))
@@ -873,9 +866,9 @@ func TestWebSocket_CompleteMessageLoop(t *testing.T) {
 
 		// Continue sending more messages after error to test loop continuation
 		trackRequest := dto.TrackRequest{Url: mockExternalServer.URL}
-		conn.WriteJSON(trackRequest)
+		_ = conn.WriteJSON(trackRequest)
 		
-		conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+		_ = conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
 		_, message, err = conn.ReadMessage()
 		if err == nil {
 			t.Logf("Message after error recovery: %s", string(message))
@@ -924,7 +917,7 @@ func TestWebSocket_ErrorInTrackChannel(t *testing.T) {
 		t.Errorf("Failed to send invalid URL request: %v", err)
 	} else {
 		// Try to read error response
-		conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 		_, message, err := conn.ReadMessage()
 		if err == nil {
 			t.Logf("Error response for invalid URL: %s", string(message))

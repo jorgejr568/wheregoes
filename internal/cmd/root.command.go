@@ -17,7 +17,7 @@ var RootCmd = &cobra.Command{
 	Long:  "Wheregoes is a CLI tool to track a URL",
 	Run: func(cmd *cobra.Command, args []string) {
 		if cmd.Flag("version").Value.String() == "true" {
-			fmt.Printf(
+			fmt.Print(
 				color.Green(
 					fmt.Sprintf("Version: %s\n", "1.0.0"),
 				),
@@ -26,7 +26,6 @@ var RootCmd = &cobra.Command{
 		}
 
 		DefaultCommand.Run(cmd, args)
-		return
 	},
 	PreRun: func(cmd *cobra.Command, args []string) {
 	},
