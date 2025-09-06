@@ -1,6 +1,7 @@
 tmp/
 .vscode/
 .idea/
+.DS_Store
 
 # binary output
 wheregoes
